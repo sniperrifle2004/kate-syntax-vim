@@ -26,6 +26,16 @@ states they should not be used, so this will not match them.
       <item>&lt;script&gt;</item>
       <item>&lt;unique&gt;</item>
     </list>
+    <list name="exSpecials">
+      <item>&lt;cword&gt;</item>
+      <item>&lt;cWORD&gt;</item>
+      <item>&lt;cfile&gt;</item>
+      <item>&lt;afile&gt;</item>
+      <item>&lt;abuf&gt;</item>
+      <item>&lt;amatch&gt;</item>
+      <item>&lt;sfile&gt;</item>
+      <item>&lt;slnum&gt;</item>
+    </list>
     <list name="beginBlockFlow">
       <item>try</item>
     </list>
@@ -162,6 +172,7 @@ states they should not be used, so this will not match them.
       <item>fold</item>
       <item>foldclose</item>
       <item>foldopen</item>
+      <item>goto</item>
     </list>
     <list name="registerCommands">
       <item>display</item>
@@ -215,7 +226,6 @@ states they should not be used, so this will not match them.
       <!-- TODO: Generic command does to much for these -->
       <item>doautocmd</item>
       <item>doautoall</item>
-      <item>goto</item>
       <!-- TODO: Executes grep. No Comments -->
       <item>grep</item>
       <!-- TODO: Like grep -->
@@ -1374,7 +1384,7 @@ states they should not be used, so this will not match them.
       <context name="exCommandHead" lineEndContext="#pop#pop" attribute="Normal Text"
                fallthrough="true" fallthroughContext="#pop!genericCommand">
         <WordDetect String="function" context="#pop!functionCommand" attribute="Keyword" beginRegion="block"/>
-        <WordDetect String="endfunction" context="#pop!genericCommand" attribute="Keyword" endRegion="block"/>
+        <WordDetect String="endfunction" context="#pop!bareCommand" attribute="Keyword" endRegion="block"/>
         <keyword String="beginBlockFlow" context="#pop!genericCommand" attribute="Flow" beginRegion="block"/>
         <WordDetect String="for" context="#pop!forCommand" attribute="Flow" beginRegion="block"/>
         <keyword String="endBlockFlow" context="#pop!simpleCommand" attribute="Flow" endRegion="block"/>
@@ -1423,10 +1433,19 @@ states they should not be used, so this will not match them.
       </context>
       <!-- BEGIN Commands -->
       <!--
+      A bare command. A bare command is a simple command that does not allow other
+      commands on its line (Bars don't work). This context does allow comments.
+      -->
+      <context name="bareCommand" lineEndContext="continuationCheck" attribute="Normal Text">
+        <IncludeRules context="hasExSpecials"/>
+        <IncludeRules context="hasComment"/>
+      </context>
+      <!--
       A simple command. Commands that take their arguments varbatim, have no expressions
       nor patterns. Comments work. Often these commands have no or few arguments
       -->
       <context name="simpleCommand" lineEndContext="continuationCheck" attribute="Normal Text">
+        <IncludeRules context="hasExSpecials"/>
         <IncludeRules context="hasComment"/>
         <IncludeRules context="hasBar"/>
       </context>
@@ -1489,6 +1508,7 @@ states they should not be used, so this will not match them.
       parameter. Comments do not work.
       -->
       <context name="exprCommand" lineEndContext="continuationCheck" attribute="Normal Text">
+        <IncludeRules context="hasExSpecials"/>
         <IncludeRules context="hasBar"/>
         <IncludeRules context="expression"/>
       </context>
@@ -1725,9 +1745,9 @@ states they should not be used, so this will not match them.
         <HlCHex attribute="HexNumber"/>
         <Float attribute="Number"/>
         <Int attribute="Number"/>
-        <RegExpr String="\\( |(#([0-9]|#|&lt;[1-9])))" attribute="Operator"/>
         <RegExpr String="'(''|[^'])*'" attribute="VerbatimString"/>
         <RegExpr String="&quot;(\\.|[^&quot;\\])*&quot;" attribute="String"/>
+        <IncludeRules context="hasExSpecials"/>
         <IncludeRules context="hasBar"/>
         <IncludeRules context="hasComment"/>
       </context>
@@ -1794,7 +1814,7 @@ states they should not be used, so this will not match them.
       -->
       <context name="pattern" lineEndContext="continuationCheck" attribute="Pattern">
         <!-- TODO: Magic and special characters -->
-        <Detect2Chars char="\" char1="\" attribute="SpecialChar"/>
+        <Detect2Chars char="\" char1="\"/>
         <RegExpr String="\\%1" attribute="SpecialChar" dynamic="true"/>
         <DetectChar char="1" context="#pop" dynamic="true" attribute="Pattern"/>
       </context>
@@ -1805,6 +1825,16 @@ states they should not be used, so this will not match them.
       </context>
       <!-- END -->
       <!-- BEGIN Rules that enable syntactic element detection in commands. To be included only. -->
+      <!--
+      Ex-commandline expansions NOTE: This does not do anything for modifiers.
+      -->
+      <context name="hasExSpecials" lineEndContext="continuationCheck" attribute="Normal Text">
+        <Detect2Chars char="\" char1="%"/>
+        <Detect2Chars char="\" char1="#"/>
+        <DetectChar char="%" attribute="SpecialChar"/>
+        <DetectChar char="#" attribute="SpecialChar"/>
+        <keyword String="exSpecials" attribute="SpecialChar" />
+      </context>
       <!-- Comments -->
       <context name="hasComment" lineEndContext="continuationCheck" attribute="Normal Text">
         <DetectChar char="&quot;" context="comment" attribute="Comment"/>
