@@ -215,8 +215,6 @@ states they should not be used, so this will not match them.
       <!-- TODO: Generic command does to much for these -->
       <item>doautocmd</item>
       <item>doautoall</item>
-      <!-- TODO: Takes pattern and then command -->
-      <item>global</item>
       <item>goto</item>
       <!-- TODO: Executes grep. No Comments -->
       <item>grep</item>
@@ -1412,9 +1410,11 @@ states they should not be used, so this will not match them.
         Because of this we can simply pop back to the top level immediately.
         -->
         <keyword String="commandCommands" context="#pop!exCommand" attribute="BuiltInCommand"/>
+        <!-- The global command -->
+        <WordDetect String="global" context="#pop!globalCommand" attribute="BuiltInCommand"/>
         <keyword String="exprCommands" context="#pop!exprCommand" attribute="BuiltInCommand"/>
         <WordDetect String="call" context="#pop!callCommand" attribute="BuiltInCommand"/>
-        <!-- Catch is control flow and a catch command. -->
+        <!-- Catch is control flow and a pattern command. -->
         <WordDetect String="catch" context="#pop!patternCommand" attribute="Flow"/>
         <keyword String="patternCommands" context="#pop!patternCommand" attribute="BuiltInCommand"/>
         <keyword String="externalCommand" context="#pop!externalCommand" attribute="BuiltInCommand"/>
@@ -1704,6 +1704,12 @@ states they should not be used, so this will not match them.
         <DetectSpaces />
         <WordDetect String="dict" context="#pop!simpleCommand" attribute="Option" />
       </context>
+      <!-- The global command is like a command command except that it first takes a pattern -->
+      <context name="globalCommand" lineEndContext="continuationCheck" attribute="Normal Text">
+        <DetectChar char="!"/>
+        <DetectSpaces />
+        <RegExpr String="&patternDelimiter;" context="#pop!exCommandPattern" attribute="Pattern" />
+      </context>
       <!--
       A generic command. Strings and numbers will be detected and comments are allowed.
       This does not nearly behave as an expression command. The reason for this is that
@@ -1777,10 +1783,10 @@ states they should not be used, so this will not match them.
       Key codes. This matches various invalid sequences, but you can't have
       it all
       -->
-      <context name="keyCode" lineEndContext="#pop" attribute="Normal Text">
-        <DetectChar char="&gt;" context="#pop" attribute="KeyCode"/>
+      <context name="keyCode" lineEndContext="#pop" attribute="KeyCode">
+        <DetectChar char="&gt;" context="#pop"/>
         <RegExpr String="\S*[^&gt;](\s|$)" context="#pop" attribute="SyntaxError"/>
-        <RegExpr String="[^&gt;]+" attribute="KeyCode"/>
+        <RegExpr String="[^&gt;]+"/>
       </context>
       <!--
       A dynamic context for patterns. The first capture group must contain
@@ -1788,8 +1794,14 @@ states they should not be used, so this will not match them.
       -->
       <context name="pattern" lineEndContext="continuationCheck" attribute="Pattern">
         <!-- TODO: Magic and special characters -->
+        <Detect2Chars char="\" char1="\" attribute="SpecialChar"/>
         <RegExpr String="\\%1" attribute="SpecialChar" dynamic="true"/>
         <DetectChar char="1" context="#pop" dynamic="true" attribute="Pattern"/>
+      </context>
+      <!-- A variation of pattern that escapes to exCommand -->
+      <context name="exCommandPattern" lineEndContext="continuationCheck" attribute="Pattern">
+        <DetectChar char="1" context="#pop!exCommand" attribute="Pattern" dynamic="true"/>
+        <IncludeRules context="pattern"/>
       </context>
       <!-- END -->
       <!-- BEGIN Rules that enable syntactic element detection in commands. To be included only. -->
@@ -1878,6 +1890,6 @@ states they should not be used, so this will not match them.
     <comments>
       <comment name="singleLine" start="&quot;"/>
     </comments>
-    <keywords casesensitive="1" weakDeliminator="&lt;&gt;"/>
+    <keywords casesensitive="1" weakDeliminator="&lt;&gt;" additionalDeliminator="#"/>
   </general>
 </language>
