@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE language [
-<!ENTITY patternDelimiter "([^|&quot;])">
+<!--
+After testing " and | do seem to work, but the documentation
+states they should not be used, so this will not match them.
+-->
+<!ENTITY patternDelimiter "([^|&quot;\a-zA-Z_0-9)">
 <!ENTITY posint "[1-9][0-9]*">
 <!ENTITY identifier "[a-zA-Z_][a-zA-Z_0-9]*">
 <!ENTITY variable "([bwtglsav]:)?&identifier;">
