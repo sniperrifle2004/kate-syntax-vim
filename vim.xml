@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE language [
-<!ENTITY pattern "([^|&quot;])((?!\1).)*\1">
+<!ENTITY patternDelimiter "([^|&quot;])">
 <!ENTITY posint "[1-9][0-9]*">
 <!ENTITY userfunc "([A-Z]|s:)[a-zA-Z_0-9]+">
 <!ENTITY variable "([bwtglsav]:)?[a-zA-Z_][a-zA-Z_0-9]*">
@@ -1367,7 +1367,7 @@
         <DetectChar char=":" context="#pop!exCommandRange" attribute="Operator"/>
         <IncludeRules context="exCommandHead"/>
       </context>
-      <context name="exCommandRangeStart" lineEndContext="#pop#pop" attribute="Normal Text"
+      <context name="exCommandRange" lineEndContext="#pop#pop" attribute="Normal Text"
                fallthrough="true" fallthroughContext="#pop!exCommandHead">
         <RegExpr String="%|(\d+|\.|\$)([+-]\d*)?([,;](\d+|\.|\$)([+-]\d*)?)?:?" context="#pop!exCommandHead" attribute="Normal Text"/>
       </context>
@@ -1497,7 +1497,7 @@
       <context name="patternCommand" lineEndContext="continuationCheck" attribute="Normal Text"
                fallthrough="true" fallthroughContext="#pop!syntaxError">
         <DetectSpaces attribute="Normal Text" />
-        <RegExpr String="&pattern;" context="#pop!simpleCommand" attribute="Pattern"/>
+        <RegExpr String="&patternDelimiter;" context="#pop!pattern" attribute="Pattern"/>
       </context>
       <!--
       A menu command. A special kind of map command that takes a menu item identifier
@@ -1738,6 +1738,15 @@
         <DetectChar char="&gt;" context="#pop" attribute="KeyCode"/>
         <RegExpr String="\S*[^&gt;](\s|$)" context="#pop" attribute="SyntaxError"/>
         <RegExpr String="[^&gt;]+" attribute="KeyCode"/>
+      </context>
+      <!--
+      A dynamic context for patterns. The first capture group must contain
+      the starting character of the pattern.
+      -->
+      <context name="pattern" lineEndContext="continuationCheck" attribute="Pattern">
+        <!-- TODO: Magic and special characters -->
+        <RegExpr String="\\%1" attribute="SpecialChar" dynamic="true"/>
+        <DetectChar char="1" context="#pop" dynamic="true" attribute="Pattern"/>
       </context>
       <!-- END -->
       <!-- BEGIN Rules that enable syntactic element detection in commands. To be included only. -->
