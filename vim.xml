@@ -2,8 +2,9 @@
 <!DOCTYPE language [
 <!ENTITY patternDelimiter "([^|&quot;])">
 <!ENTITY posint "[1-9][0-9]*">
-<!ENTITY userfunc "([A-Z]|s:)[a-zA-Z_0-9]+">
-<!ENTITY variable "([bwtglsav]:)?[a-zA-Z_][a-zA-Z_0-9]*">
+<!ENTITY identifier "[a-zA-Z_][a-zA-Z_0-9]*">
+<!ENTITY variable "([bwtglsav]:)?&identifier;">
+<!ENTITY userfunc "&variable;(\.&identifier;)+|[A-Z][a-zA-Z_0-9]*|s:&identifier;">
 ]>
 <language name="VIM" version="4" kateversion="5.0" section="Scripts"
           extensions="*.vim" license="MIT">
@@ -34,8 +35,6 @@
       <item>else</item>
       <item>continue</item>
       <item>break</item>
-      <!-- TODO: Only keyword in for loop -->
-      <item>in</item>
       <item>finally</item>
       <item>finish</item>
       <item>throw</item>
@@ -212,7 +211,6 @@
       <!-- TODO: Generic command does to much for these -->
       <item>doautocmd</item>
       <item>doautoall</item>
-      <item>function</item>
       <!-- TODO: Takes pattern and then command -->
       <item>global</item>
       <item>goto</item>
@@ -1373,9 +1371,9 @@
       </context>
       <context name="exCommandHead" lineEndContext="#pop#pop" attribute="Normal Text"
                fallthrough="true" fallthroughContext="#pop!genericCommand">
-        <WordDetect String="function" context="genericCommand" attribute="Keyword" beginRegion="block"/>
-        <WordDetect String="endfunction" context="genericCommand" attribute="Keyword" endRegion="block"/>
-        <keyword String="beginBlockFlow" context="genericCommand" attribute="Flow" beginRegion="block"/>
+        <WordDetect String="function" context="#pop!functionCommand" attribute="Keyword" beginRegion="block"/>
+        <WordDetect String="endfunction" context="#pop!genericCommand" attribute="Keyword" endRegion="block"/>
+        <keyword String="beginBlockFlow" context="#pop!genericCommand" attribute="Flow" beginRegion="block"/>
         <WordDetect String="for" context="#pop!forCommand" attribute="Flow" beginRegion="block"/>
         <keyword String="endBlockFlow" context="#pop!simpleCommand" attribute="Flow" endRegion="block"/>
         <keyword String="flow" context="#pop!simpleCommand" attribute="Flow"/>
@@ -1443,14 +1441,14 @@
                fallthrough="true" fallthroughContext="#pop!syntaxError">
         <DetectSpaces/>
         <DetectChar char="[" context="#pop!forVarList" attribute="Normal Text" />
-        <RegExpr String="([bwtglsav]:)?[a-zA-Z_0-9]+" context="#pop!forIn" attribute="Variable" />
+        <RegExpr String="&variable;" context="#pop!forIn" attribute="Variable" />
       </context>
       <context name="forVarList" lineEndContext="continuationCheck" attribute="Normal Text"
                fallthrough="true" fallthroughContext="#pop!syntaxError">
         <DetectSpaces/>
         <DetectChar char="," attribute="Normal Text" />
         <DetectChar char="]" context="#pop!forIn" attribute="Normal Text" />
-        <RegExpr String="([bwtglsav]:)?[a-zA-Z_0-9]+" attribute="Variable" />
+        <RegExpr String="&variable;" attribute="Variable" />
       </context>
       <context name="forIn" lineEndContext="continuationCheck" attribute="Normal Text"
                fallthrough="true" fallthroughContext="#pop!syntaxError">
@@ -1660,6 +1658,47 @@
                fallthrough="true" fallthroughContext="#pop!syntaxError">
         <DetectSpaces/>
         <RegExpr String="[A-Z][a-zA-Z_0-9]*" context="#pop!simpleCommand" attribute="UserCommand" />
+      </context>
+      <!-- The function command. Begins a function definition or lists functions -->
+      <context name="functionCommand" lineEndContext="continuationCheck" attribute="Normal Text"
+               fallthrough="true" fallthroughContext="#pop!syntaxError">
+        <DetectSpaces/>
+        <DetectChar char="!"/>
+        <RegExpr String="(/)" context="#pop!pattern" attribute="Pattern"/>
+        <RegExpr String="&userfunc;" context="#pop!functionArgumentList"
+                 attribute="UserFunction"/>
+      </context>
+      <context name="functionArgumentList" lineEndContext="continuationCheck" attribute="Normal Text"
+               fallthrough="true" fallthroughContext="#pop!syntaxError">
+        <RegExpr String="\(\s*\)" context="#pop!functionModifierRange" />
+        <DetectChar char="(" context="#pop!functionArgument" />
+      </context>
+      <context name="functionArgument" lineEndContext="continuationCheck" attribute="Normal Text"
+               fallthrough="true" fallthroughContext="#pop!syntaxError">
+        <DetectSpaces />
+        <RegExpr String="...\s*\)" context="#pop!functionModifierRange" />
+        <RegExpr String="&identifier;" context="functionNextArgument" attribute="Variable" />
+      </context>
+      <context name="functionNextArgument" lineEndContext="continuationCheck" attribute="Normal Text"
+               fallthrough="true" fallthroughContext="#pop!syntaxError">
+        <DetectSpaces />
+        <DetectChar char=")" context="#pop#pop!functionModifierRange" />
+        <DetectChar char="," context="#pop" />
+      </context>
+      <context name="functionModifierRange" lineEndContext="continuationCheck" attribute="Normal Text"
+               fallthrough="true" fallthroughContext="#pop!functionModifierAbort">
+        <DetectSpaces />
+        <WordDetect String="range" context="#pop!functionModifierAbort" attribute="Option" />
+      </context>
+      <context name="functionModifierAbort" lineEndContext="continuationCheck" attribute="Normal Text"
+               fallthrough="true" fallthroughContext="#pop!functionModifierDict">
+        <DetectSpaces />
+        <WordDetect String="abort" context="#pop!functionModifierDict" attribute="Option" />
+      </context>
+      <context name="functionModifierDict" lineEndContext="continuationCheck" attribute="Normal Text"
+               fallthrough="true" fallthroughContext="#pop!simpleCommand">
+        <DetectSpaces />
+        <WordDetect String="dict" context="#pop!simpleCommand" attribute="Option" />
       </context>
       <!--
       A generic command. Strings and numbers will be detected and comments are allowed.
