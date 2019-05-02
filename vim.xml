@@ -10,7 +10,7 @@ states they should not be used, so this will not match them.
 <!ENTITY variable "([bwtglsav]:)?&identifier;">
 <!ENTITY userfunc "&variable;(\.&identifier;)+|[A-Z][a-zA-Z_0-9]*|s:&identifier;">
 ]>
-<language name="VIM" version="4" kateversion="5.0" section="Scripts"
+<language name="VIM" version="5" kateversion="5.0" section="Scripts"
           extensions="*.vim" license="MIT">
   <highlighting>
     <list name="tasks">
@@ -1860,7 +1860,8 @@ states they should not be used, so this will not match them.
         <IncludeRules context="expression"/>
       </context>
       <!-- Expression highlighting. This makes most words variables and other things -->
-      <context name="expression" lineEndContext="continuationCheck" attribute="Normal Text" fallthrough="true" fallthroughContext="#pop">
+      <context name="expression" lineEndContext="continuationCheck" attribute="Normal Text"
+               fallthrough="true" fallthroughContext="#pop">
         <HlCOct attribute="OctalNumber"/>
         <HlCHex attribute="HexNumber"/>
         <Float attribute="Number"/>
@@ -1871,12 +1872,12 @@ states they should not be used, so this will not match them.
         <keyword String="options" attribute="Option"/>
         <keyword String="functions" attribute="BuiltInFunction"/>
         <IncludeRules context="hasOperators"/>
-        <RegExpr String="&userfunc;\(" context="functionCall" lookAhead="true"/>
+        <RegExpr String="(&userfunc;)\(" context="functionCall" lookAhead="true"/>
         <RegExpr String="&variable;" attribute="Variable"/>
       </context>
       <context name="functionCall" lineEndContext="continuationCheck" attribute="Normal Text">
         <RegExpr String="&userfunc;" attribute="UserFunction"/>
-        <DetectChar char="(" context="#pop" attribute="Operator"/>
+        <DetectChar char="(" context="#pop"/>
       </context>
       <!-- END -->
       <!-- BEGIN meta -->
